@@ -1,0 +1,35 @@
+﻿services:
+  db:
+    image: mysql:8.0
+    container_name: petworld-db
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: petworld
+      MYSQL_USER: petworld
+      MYSQL_PASSWORD: petworld
+    ports:
+      - "3306:3306"
+    volumes:
+      - petworld-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-psecret"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: petworld-web
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PetWorldDb: "Server=db;Port=3306;Database=petworld;User=petworld;Password=petworld;TreatTinyAsBoolean=true;"
+    ports:
+      - "5000:5000"
+
+volumes:
+  petworld-mysql:

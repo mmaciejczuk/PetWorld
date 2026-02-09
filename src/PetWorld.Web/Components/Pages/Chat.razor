@@ -1,0 +1,72 @@
+﻿@page "/chat"
+@rendermode InteractiveServer
+@using PetWorld.Application.Chat
+@using PetWorld.Application.Ai
+@inject IChatMessageStore Store
+@inject IAiWriterCriticService Ai
+
+<h3>Chat</h3>
+
+<div style="max-width: 720px;">
+    <textarea @bind="Question" rows="4" style="width: 100%;" placeholder="Wpisz pytanie..."></textarea>
+    <div style="margin-top: 8px;">
+        <button @onclick="SendAsync" disabled="@IsSending">Wyślij</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Answer))
+    {
+        <div style="margin-top: 16px; padding: 12px; border: 1px solid #ddd;">
+            <div><b>Odpowiedź:</b></div>
+            <div style="white-space: pre-wrap;">@Answer</div>
+            <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">
+                Iteracje: @Iterations
+                @if (!Approved)
+                {
+                    <span> (niezaakceptowane)</span>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Feedback))
+            {
+                <div style="margin-top: 6px; font-size: 0.9em; opacity: 0.8;">
+                    Feedback: @Feedback
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private string Question { get; set; } = string.Empty;
+    private string Answer { get; set; } = string.Empty;
+    private int Iterations { get; set; }
+    private bool Approved { get; set; }
+    private string? Feedback { get; set; }
+    private bool IsSending { get; set; }
+
+    private async Task SendAsync()
+    {
+        if (IsSending) return;
+        if (string.IsNullOrWhiteSpace(Question)) return;
+
+        IsSending = true;
+        try
+        {
+            var q = Question;
+
+            var result = await Ai.RunAsync(q);
+
+            Answer = result.FinalAnswer;
+            Iterations = result.Iterations;
+            Approved = result.Approved;
+            Feedback = result.Feedback;
+
+            await Store.AddAsync(q, Answer, Iterations);
+
+            Question = string.Empty;
+        }
+        finally
+        {
+            IsSending = false;
+        }
+    }
+}

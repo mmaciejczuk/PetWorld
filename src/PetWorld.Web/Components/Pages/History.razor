@@ -1,0 +1,50 @@
+﻿@page "/history"
+
+@rendermode InteractiveServer
+@using PetWorld.Application.Chat
+@inject IChatMessageStore Store
+
+<h3>Historia</h3>
+
+@if (Items is null)
+{
+    <p>Ładowanie...</p>
+}
+else if (Items.Count == 0)
+{
+    <p>Brak danych.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Data (UTC)</th>
+                <th>Pytanie</th>
+                <th>Odpowiedź</th>
+                <th>Iteracje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Items)
+            {
+                <tr>
+                    <td>@row.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td style="max-width: 320px; white-space: pre-wrap;">@row.Question</td>
+                    <td style="max-width: 320px; white-space: pre-wrap;">@row.Answer</td>
+                    <td>@row.Iterations</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<ChatMessageDto>? Items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Items = await Store.GetLatestAsync(100);
+    }
+}
+
